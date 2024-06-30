@@ -1,6 +1,9 @@
 # Tweply
 A realtime board application in which you can create rooms and join them by thier id.
 
+## Demo
+https://github.com/yahyakamran/takhti/assets/98393743/dc0923d5-77d2-476f-92e7-d1f5e82a1ed5
+
 ## Build
 You need golang and python to run it on any machine
 ```console
