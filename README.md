@@ -1,4 +1,4 @@
-# Tweply
+# Takhti
 A realtime board application in which you can create rooms and join them by thier id.
 
 ## Demo
