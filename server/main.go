@@ -33,6 +33,8 @@ func main() {
 
     mux.HandleFunc("PUT /room/{roomId}/updateBoard", updateBoard)
 
+    mux.HandleFunc("/room/{roomId}/boardEvent", boardSSE)
+
     c  := cors.New(cors.Options{
         AllowedOrigins:   []string{"*"},
         AllowedMethods:   []string{http.MethodGet, http.MethodPost,
@@ -43,6 +45,46 @@ func main() {
     handler := c.Handler(mux)
 
     log.Fatal(http.ListenAndServe(":42069", handler))
+}
+
+func boardSSE(w http.ResponseWriter , r *http.Request){
+
+    w.Header().Set("Content-type","text/event-stream")
+    w.Header().Set("Cache-Control","no-cache")
+    w.Header().Set("Connection","keep-alive")
+
+    f , ok := w.(http.Flusher);
+    if !ok{
+	http.Error( w , "SSE not supported , IE6 bruh" ,
+		http.StatusBadRequest)
+	return;
+    }
+
+    id , err := strconv.Atoi(r.PathValue("roomId"))
+
+    if err != nil {
+	http.Error( w , err.Error() , http.StatusBadRequest)
+	return;
+    }
+
+    room , ok := Rooms[id];
+
+    if !ok {
+        http.Error(w,"Room:Notfound",http.StatusNotFound);
+        return;
+    }
+
+    j , err := json.Marshal(room.Board);
+
+    if err != nil {
+        http.Error( w , err.Error() ,http.StatusBadRequest)
+        return
+    }
+
+    res := string(j);
+    fmt.Fprintln(w,"retry:45");
+    fmt.Fprintf(w,"data:%v\n\n", res);
+    f.Flush();
 }
 
 func updateBoard(w http.ResponseWriter , r * http.Request){
@@ -68,13 +110,6 @@ func updateBoard(w http.ResponseWriter , r * http.Request){
     } else {
 	entry.Board = board.Board;
 	Rooms[id] = entry;
-    }
-
-    for row := 0; row < 20; row++ {
-        for column := 0; column < 20; column++{
-    	    fmt.Print(Rooms[id].Board[row][column], " ")
-    	}
-        fmt.Print("\n")
     }
 
 

@@ -67,23 +67,12 @@ joinRoomBtn?.addEventListener("click", ()=>{
 	const CELL_WIDTH = canvas.width / COLS;
 	const CELL_HEIGHT = canvas.height / ROWS;
 
-	function render(){
-	    fetch(`http://localhost:42069/room/${roomId}`,{
-	        method: "get",
-	    	headers: {
-	    	  'Accept': 'application/json',
-	    	  'Content-Type': 'application/json'
-	    	},
-	    })
-	    .then(res => res.json())
-	    .then(data => board = data.board)
-	    .catch(err => console.log(err))
- 	    renderBoard(ctx , board , CELL_WIDTH , CELL_HEIGHT);
-	    window.requestAnimationFrame(render)
+	const event = new EventSource(`http://localhost:42069/room/${roomId}/boardEvent`);
+
+	event.onmessage = (e) => {
+	    let roomObj = JSON.parse(e.data);
+	    renderBoard( ctx , roomObj , CELL_WIDTH , CELL_HEIGHT);
 	}
-
-	window.requestAnimationFrame(render);
-
 
     })
     .catch(err => console.error(err))
