@@ -44,6 +44,7 @@ func main() {
 
     handler := c.Handler(mux)
 
+    fmt.Println("Listening to Port 42069");
     log.Fatal(http.ListenAndServe(":42069", handler))
 }
 
@@ -168,7 +169,7 @@ func createRoom(w http.ResponseWriter , r *http.Request){
     err := json.NewDecoder(r.Body).Decode(&room);
 
     if err != nil {
-	http.Error(w , err.Error() , http.StatusBadRequest);
+	http.Error(w , "Why you cant decode it" , http.StatusBadRequest);
 	return;
     }
 
