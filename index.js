@@ -5,6 +5,8 @@ const ROWS = 20;
 const COLS = ROWS;
 const CANVAS_WIDTH = 200;
 
+const URL = "http://localhost:6969/"
+
 
 function createEmptyBoard( rows , cols ){
     let board = new Array(rows);
@@ -27,7 +29,26 @@ function renderBoard(ctx , board , CELL_WIDTH , CELL_HEIGHT){
         }
     }
 }
+
+function updateBoard(board , roomId){
+    fetch(`http://localhost:42069/room/${roomId}/updateBoard`,{
+        method: "put",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+	   board: board
+        }),
+    })
+    .catch(err => {
+	console.log(err);
+	return;
+    })
+}
+
 (()=>{
+
 joinRoomBtn?.addEventListener("click", async()=>{
     const roomId = document.getElementById("joinRoomId").value;
     let data = undefined;
@@ -38,22 +59,27 @@ joinRoomBtn?.addEventListener("click", async()=>{
     }
 
     try{
-	const res = await fetch(`http://localhost:42069/room/${roomId}`,{
-    	    method: "get",
-    		headers: {
-    		  'Accept': 'application/json',
-    		  'Content-Type': 'application/json'
-    		},
-    	})
+	const res = await fetch(`http://localhost:42069/user/${roomId}`,{
+    	    method: "put",
+	    headers: {
+    	      'Accept': 'application/json',
+    	      'Content-Type': 'application/json'
+    	    },
+    })
 	if(!res.ok){
-	    console.log("Response was not ok");
+	    console.error("response was not ok");
+	    return;
 	}
 	data = await res.json()
     }catch(err){
-	console.log("ERROR " , err);
+	return;
     }
-    document.getElementById("joiningSection").style.display =
-        "none"
+
+
+    localStorage.setItem("id" , data?.id);
+
+    window.location = URL + `room.html?roomId=${roomId}&userId=${data?.id}`;
+    return;
     document.getElementById("canvasSection").style.display =
         "block"
     document.getElementById("heading").innerText
@@ -75,8 +101,8 @@ joinRoomBtn?.addEventListener("click", async()=>{
     const event = new EventSource(`http://localhost:42069/room/${roomId}/boardEvent`);
 
     event.onmessage = (e) => {
-        let roomObj = JSON.parse(e.data);
-        renderBoard( ctx , roomObj , CELL_WIDTH , CELL_HEIGHT);
+        let board = JSON.parse(e.data);
+        renderBoard( ctx , board , CELL_WIDTH , CELL_HEIGHT);
     }
 })
 
@@ -84,6 +110,7 @@ createRoomBtn?.addEventListener("click" ,async()=>{
     const roomId = document.getElementById("hostRoomId").value;
     const roomName = document.getElementById("hostRoomName").value;
     const emptyBoard = createEmptyBoard(ROWS , COLS);
+    let data = undefined;
 
     if(!roomName || ! roomId){
 	alert("Room Id and Room Name is required");
@@ -105,51 +132,19 @@ createRoomBtn?.addEventListener("click" ,async()=>{
     		})
     	})
     	if(!res.ok){
-    	    throw new Error("Response was not ok");
+	    console.error("response was not ok");
+	    return;
     	}
+	data = await res.json()
     }catch(err){
-	console.log("ERROR : " , err);
+	console.error("ERROR : " , err);
+	return;
     }
 
-    document.getElementById("joiningSection").style.display =
-	"none"
-    document.getElementById("heading").innerText
-	+= "   "  + roomId;
-    document.getElementById("canvasSection").style.display =
-	"block"
+    localStorage.setItem("id" , data?.id);
 
-    const canvas = document.getElementById("canvas");
-    let ctx = canvas.getContext("2d");
+    window.location = URL + `room.html?roomId=${roomId}&userId=${data?.id}`;
 
-    let current_board = emptyBoard;
-
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = canvas.width;
-
-    const CELL_WIDTH = canvas.width / COLS;
-    const CELL_HEIGHT = canvas.height / ROWS;
-
-    ctx.fillStyle = "grey";
-    ctx.fillRect(0 , 0 , canvas.width , canvas.height);
-    ctx.fill();
-
-    canvas.addEventListener("mousedown",(e)=>{
-	const X = Math.floor(e.offsetX/CELL_WIDTH);
-	const Y = Math.floor(e.offsetY/CELL_HEIGHT);
-	current_board[X][Y] = 1;
-	renderBoard(ctx,current_board,CELL_WIDTH,CELL_HEIGHT);
-	fetch(`http://localhost:42069/room/${roomId}/updateBoard`,{
-	    method: "put",
-	    headers: {
-	      'Accept': 'application/json',
-	      'Content-Type': 'application/json'
-	    },
-	    body: JSON.stringify({
-		board: current_board
-	    }),
-	})
-	.catch(err => console.log(err))
-    })
-    renderBoard(ctx,current_board,CELL_WIDTH,CELL_HEIGHT);
-});})()
+    });
+})()
 
